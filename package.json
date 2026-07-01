@@ -1,0 +1,14 @@
+{
+  "name": "yzf-system",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:server": "pnpm --filter yzf-server dev",
+    "dev:client": "pnpm --filter yzf-client dev",
+    "dev": "concurrently \"pnpm dev:server\" \"pnpm dev:client\"",
+    "db:setup": "pnpm --filter yzf-server db:push && pnpm --filter yzf-server db:generate && pnpm --filter yzf-server db:seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

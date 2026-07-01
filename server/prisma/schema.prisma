@@ -1,0 +1,140 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique @db.VarChar(50)
+  password  String   @db.VarChar(255)
+  name      String   @db.VarChar(100)
+  role      String   @default("admin") @db.VarChar(20)
+  status    Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Phone {
+  id          Int      @id @default(autoincrement())
+  phoneNumber String   @unique @map("phone_number") @db.VarChar(20)
+  status      Int      @default(1)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  benefits     PhoneBenefit[]
+  grabRecords  GrabRecord[]
+  coupons      CouponRecord[]
+  express      Express[]
+
+  @@map("phones")
+}
+
+model Benefit {
+  id               Int      @id @default(autoincrement())
+  name             String   @db.VarChar(100)
+  needGrab         Int      @default(0) @map("need_grab")
+  cost             Decimal? @db.Decimal(10, 2)
+  benefitValue     String?  @map("benefit_value") @db.VarChar(100)
+  recommendation   String?  @db.VarChar(200)
+  calculationMethod String? @map("calculation_method") @db.Text
+  sortOrder        Int      @default(0) @map("sort_order")
+  status           Int      @default(1)
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  phones       PhoneBenefit[]
+  grabRecords  GrabRecord[]
+  coupons      Coupon[]
+
+  @@map("benefits")
+}
+
+model PhoneBenefit {
+  id           Int @id @default(autoincrement())
+  phoneId      Int @map("phone_id")
+  benefitId    Int @map("benefit_id")
+  grabDayStart Int @map("grab_day_start")
+  grabDayEnd   Int @map("grab_day_end")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  phone   Phone   @relation(fields: [phoneId], references: [id])
+  benefit Benefit @relation(fields: [benefitId], references: [id])
+
+  @@unique([phoneId, benefitId])
+  @@map("phone_benefits")
+}
+
+model GrabRecord {
+  id        Int      @id @default(autoincrement())
+  phoneId   Int      @map("phone_id")
+  benefitId Int      @map("benefit_id")
+  status    String   @default("未领取") @db.VarChar(20)
+  grabbedAt DateTime? @map("grabbed_at")
+  month     String   @db.VarChar(7)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  phone   Phone   @relation(fields: [phoneId], references: [id])
+  benefit Benefit @relation(fields: [benefitId], references: [id])
+
+  @@unique([phoneId, benefitId, month])
+  @@map("grab_records")
+}
+
+model Coupon {
+  id           Int       @id @default(autoincrement())
+  benefitId    Int?      @map("benefit_id")
+  name         String    @db.VarChar(100)
+  needGrab     Int       @default(0) @map("need_grab")
+  forPhysical  Int       @default(0) @map("for_physical")
+  validDays    Int?      @map("valid_days")
+  validStart   DateTime? @map("valid_start") @db.Date
+  validEnd     DateTime? @map("valid_end") @db.Date
+  sortOrder    Int       @default(0) @map("sort_order")
+  status       Int       @default(1)
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  benefit Benefit?     @relation(fields: [benefitId], references: [id])
+  records CouponRecord[]
+
+  @@map("coupons")
+}
+
+model CouponRecord {
+  id         Int       @id @default(autoincrement())
+  phoneId    Int       @map("phone_id")
+  couponId   Int       @map("coupon_id")
+  status     String    @default("未使用") @db.VarChar(20)
+  grabbedAt  DateTime? @map("grabbed_at")
+  validStart DateTime? @map("valid_start") @db.Date
+  validEnd   DateTime? @map("valid_end") @db.Date
+  usedAt     DateTime? @map("used_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  phone  Phone  @relation(fields: [phoneId], references: [id])
+  coupon Coupon @relation(fields: [couponId], references: [id])
+
+  @@unique([phoneId, couponId])
+  @@map("coupon_records")
+}
+
+model Express {
+  id             Int      @id @default(autoincrement())
+  phoneId        Int      @map("phone_id")
+  trackingNumber String?  @map("tracking_number") @db.VarChar(50)
+  recipientName  String?  @map("recipient_name") @db.VarChar(50)
+  recipientPhone String?  @map("recipient_phone") @db.VarChar(20)
+  address        String?  @db.Text
+  status         String   @default("待发货") @db.VarChar(20)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  phone Phone @relation(fields: [phoneId], references: [id])
+
+  @@map("express")
+}

@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>翼支付权益管理</title>
+    <!-- Font Awesome 图标库 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+    <style>
+        /* ========== 全局重置 & 基础 ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #f0f2f5;
+            color: #1d2129;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* ========== 侧边栏 ========== */
+        .sidebar {
+            width: 220px;
+            background: #ffffff;
+            border-right: 1px solid #e8ecf1;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            overflow-y: auto;
+            padding: 20px 0 30px 0;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.02);
+        }
+
+        .sidebar .logo {
+            padding: 0 20px 28px 20px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #1d2129;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #f0f2f5;
+            margin-bottom: 16px;
+        }
+
+        .sidebar .logo i {
+            color: #1677ff;
+            font-size: 22px;
+        }
+
+        .sidebar .menu-label {
+            font-size: 12px;
+            color: #86909c;
+            padding: 12px 20px 6px 20px;
+            letter-spacing: 0.3px;
+            font-weight: 500;
+        }
+
+        .sidebar .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin: 2px 8px;
+            border-radius: 8px;
+            color: #4e5969;
+            font-size: 14px;
+            font-weight: 450;
+            cursor: default;
+            transition: all 0.15s;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .sidebar .menu-item i {
+            width: 18px;
+            font-size: 16px;
+            color: #86909c;
+            transition: color 0.15s;
+        }
+
+        .sidebar .menu-item:hover {
+            background: #f7f8fa;
+            color: #1d2129;
+        }
+        .sidebar .menu-item:hover i {
+            color: #4e5969;
+        }
+
+        .sidebar .menu-item.active {
+            background: #e8f0fe;
+            color: #1677ff;
+            font-weight: 500;
+        }
+        .sidebar .menu-item.active i {
+            color: #1677ff;
+        }
+
+        .sidebar .menu-item .badge {
+            margin-left: auto;
+            background: #f0f2f5;
+            font-size: 11px;
+            padding: 0 8px;
+            border-radius: 10px;
+            color: #4e5969;
+            line-height: 20px;
+        }
+
+        /* ========== 主内容区 ========== */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            height: 100vh;
+            overflow-y: auto;
+            background: #f5f6fa;
+        }
+
+        /* ========== 顶部导航 ========== */
+        .topbar {
+            background: #ffffff;
+            padding: 0 32px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e8ecf1;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .topbar .left {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .topbar .left .page-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #1d2129;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .topbar .left .page-title i {
+            color: #1677ff;
+            font-size: 18px;
+        }
+
+        /* ===== 面包屑 (在顶部导航内) ===== */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: #86909c;
+            gap: 4px;
+            background: #f7f8fa;
+            padding: 4px 14px;
+            border-radius: 20px;
+            height: 32px;
+            border: 1px solid #f0f2f5;
+        }
+
+        .breadcrumb a {
+            color: #4e5969;
+            text-decoration: none;
+            transition: color 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .breadcrumb a:hover {
+            color: #1677ff;
+        }
+
+        .breadcrumb .separator {
+            color: #c9cdd4;
+            font-size: 12px;
+            margin: 0 2px;
+        }
+
+        .breadcrumb .current {
+            color: #1d2129;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .breadcrumb .current i {
+            font-size: 12px;
+            color: #1677ff;
+        }
+
+        .topbar .right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .topbar .right .admin-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+            color: #4e5969;
+        }
+
+        .topbar .right .admin-info .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #e8f0fe;
+            color: #1677ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .topbar .right .admin-info .name {
+            font-weight: 450;
+        }
+
+        .topbar .right .admin-info .role {
+            color: #86909c;
+            font-size: 12px;
+            background: #f0f2f5;
+            padding: 0 10px;
+            border-radius: 12px;
+            line-height: 22px;
+        }
+
+        .topbar .right .icon-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: #4e5969;
+            font-size: 18px;
+            cursor: default;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s;
+        }
+
+        .topbar .right .icon-btn:hover {
+            background: #f0f2f5;
+        }
+
+        /* ========== 内容主体 ========== */
+        .content {
+            padding: 24px 32px 32px 32px;
+            flex: 1;
+        }
+
+        /* ========== 工具栏 ========== */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 20px;
+            background: #ffffff;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            border: 1px solid #e8ecf1;
+        }
+
+        .toolbar .left-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar .left-actions .search-box {
+            display: flex;
+            align-items: center;
+            background: #f7f8fa;
+            border: 1px solid #e8ecf1;
+            border-radius: 8px;
+            padding: 0 12px;
+            height: 36px;
+            transition: border 0.15s;
+        }
+
+        .toolbar .left-actions .search-box:focus-within {
+            border-color: #1677ff;
+            box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.12);
+        }
+
+        .toolbar .left-actions .search-box i {
+            color: #86909c;
+            font-size: 14px;
+            margin-right: 8px;
+        }
+
+        .toolbar .left-actions .search-box input {
+            border: none;
+            background: transparent;
+            padding: 6px 0;
+            font-size: 14px;
+            color: #1d2129;
+            outline: none;
+            width: 180px;
+        }
+
+        .toolbar .left-actions .search-box input::placeholder {
+            color: #c9cdd4;
+        }
+
+        .toolbar .left-actions .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 16px;
+            height: 36px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 450;
+            border: 1px solid #e8ecf1;
+            background: #ffffff;
+            color: #4e5969;
+            cursor: default;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .toolbar .left-actions .btn i {
+            font-size: 14px;
+            color: #86909c;
+        }
+
+        .toolbar .left-actions .btn:hover {
+            background: #f7f8fa;
+            border-color: #c9cdd4;
+        }
+
+        .toolbar .left-actions .btn-primary {
+            background: #1677ff;
+            border-color: #1677ff;
+            color: #ffffff;
+        }
+
+        .toolbar .left-actions .btn-primary i {
+            color: #ffffff;
+        }
+
+        .toolbar .left-actions .btn-primary:hover {
+            background: #4096ff;
+            border-color: #4096ff;
+        }
+
+        .toolbar .right-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #86909c;
+            font-size: 13px;
+        }
+
+        .toolbar .right-actions .divider {
+            width: 1px;
+            height: 20px;
+            background: #e8ecf1;
+        }
+
+        /* ========== 表格卡片 ========== */
+        .table-card {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e8ecf1;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+        }
+
+        .table-card .table-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px 12px 20px;
+            border-bottom: 1px solid #f0f2f5;
+        }
+
+        .table-card .table-header .title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1d2129;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .table-card .table-header .title .count {
+            font-weight: 400;
+            color: #86909c;
+            font-size: 13px;
+        }
+
+        .table-card .table-header .actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .table-card .table-header .actions .btn-sm {
+            padding: 0 12px;
+            height: 30px;
+            font-size: 13px;
+            border-radius: 6px;
+            border: 1px solid #e8ecf1;
+            background: #ffffff;
+            color: #4e5969;
+            cursor: default;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s;
+        }
+
+        .table-card .table-header .actions .btn-sm:hover {
+            background: #f7f8fa;
+        }
+
+        .table-card .table-header .actions .btn-sm i {
+            font-size: 12px;
+            color: #86909c;
+        }
+
+        /* ========== 表格 ========== */
+        .table-wrapper {
+            overflow-x: auto;
+            padding: 0 4px 4px 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        table thead {
+            background: #fafbfc;
+        }
+
+        table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-weight: 500;
+            color: #4e5969;
+            border-bottom: 1px solid #e8ecf1;
+            font-size: 13px;
+            letter-spacing: 0.2px;
+            white-space: nowrap;
+        }
+
+        table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f0f2f5;
+            color: #1d2129;
+            vertical-align: middle;
+        }
+
+        table tbody tr:hover {
+            background: #fafbfc;
+        }
+
+        table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* ========== 表格内元素 ========== */
+        .tag {
+            display: inline-block;
+            padding: 0 10px;
+            height: 24px;
+            line-height: 24px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 450;
+            background: #f0f2f5;
+            color: #4e5969;
+        }
+
+        .tag-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .tag-warning {
+            background: #fff8e1;
+            color: #b76e00;
+        }
+
+        .tag-danger {
+            background: #fde8e8;
+            color: #c62828;
+        }
+
+        .tag-blue {
+            background: #e8f0fe;
+            color: #1677ff;
+        }
+
+        .tag-gray {
+            background: #f0f2f5;
+            color: #4e5969;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .status-dot.green {
+            background: #34a853;
+        }
+        .status-dot.orange {
+            background: #f9ab00;
+        }
+        .status-dot.red {
+            background: #ea4335;
+        }
+        .status-dot.gray {
+            background: #9aa0a6;
+        }
+
+        .action-btns {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .action-btns .action-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: none;
+            background: transparent;
+            color: #86909c;
+            font-size: 14px;
+            cursor: default;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .action-btns .action-btn:hover {
+            background: #f0f2f5;
+            color: #4e5969;
+        }
+
+        .action-btns .action-btn.edit:hover {
+            color: #1677ff;
+            background: #e8f0fe;
+        }
+        .action-btns .action-btn.delete:hover {
+            color: #ea4335;
+            background: #fde8e8;
+        }
+
+        /* ========== 空状态 ========== */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px 64px 20px;
+            color: #86909c;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            color: #d9dde3;
+            margin-bottom: 16px;
+        }
+
+        .empty-state .empty-title {
+            font-size: 15px;
+            color: #4e5969;
+            font-weight: 450;
+            margin-bottom: 6px;
+        }
+
+        .empty-state .empty-desc {
+            font-size: 13px;
+            color: #c9cdd4;
+        }
+
+        /* ========== 分页 ========== */
+        .table-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            border-top: 1px solid #f0f2f5;
+            font-size: 13px;
+            color: #4e5969;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .table-footer .pagination {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .table-footer .pagination .page-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            border: 1px solid #e8ecf1;
+            background: #ffffff;
+            color: #4e5969;
+            font-size: 13px;
+            cursor: default;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .table-footer .pagination .page-btn:hover {
+            border-color: #c9cdd4;
+            background: #fafbfc;
+        }
+
+        .table-footer .pagination .page-btn.active {
+            background: #1677ff;
+            border-color: #1677ff;
+            color: #ffffff;
+        }
+
+        .table-footer .pagination .page-btn.arrow {
+            border: none;
+            background: transparent;
+            color: #86909c;
+        }
+
+        .table-footer .pagination .page-btn.arrow:hover {
+            background: #f0f2f5;
+            color: #4e5969;
+        }
+
+        /* ========== 响应式 ========== */
+        @media (max-width: 992px) {
+            .sidebar {
+                width: 72px;
+                padding: 16px 0;
+            }
+            .sidebar .logo span,
+            .sidebar .menu-label,
+            .sidebar .menu-item span,
+            .sidebar .menu-item .badge {
+                display: none;
+            }
+            .sidebar .logo {
+                justify-content: center;
+                padding: 0 0 20px 0;
+            }
+            .sidebar .menu-item {
+                justify-content: center;
+                padding: 10px 0;
+                margin: 2px 6px;
+            }
+            .sidebar .menu-item i {
+                font-size: 18px;
+            }
+            .topbar {
+                padding: 0 16px;
+            }
+            .content {
+                padding: 16px;
+            }
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .toolbar .left-actions {
+                flex-wrap: wrap;
+            }
+            .toolbar .left-actions .search-box input {
+                width: 120px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .topbar .left .page-title span {
+                display: none;
+            }
+            .breadcrumb {
+                font-size: 12px;
+                padding: 2px 10px;
+                height: 28px;
+            }
+            .breadcrumb .current i {
+                display: none;
+            }
+            .topbar .right .admin-info .role {
+                display: none;
+            }
+            .topbar .right .admin-info .name {
+                font-size: 13px;
+            }
+            table th,
+            table td {
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+            .table-footer {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== 侧边栏 ===== -->
+    <aside class="sidebar">
+        <div class="logo">
+            <i class="fas fa-wallet"></i>
+            <span>翼支付权益</span>
+        </div>
+
+        <div class="menu-label">导航菜单</div>
+
+        <a class="menu-item" href="#">
+            <i class="fas fa-chart-pie"></i>
+            <span>仪表盘</span>
+        </a>
+        <a class="menu-item" href="#">
+            <i class="fas fa-table"></i>
+            <span>矩阵登记</span>
+        </a>
+        <a class="menu-item" href="#">
+            <i class="fas fa-list-ul"></i>
+            <span>权益列表</span>
+        </a>
+        <a class="menu-item" href="#">
+            <i class="fas fa-ticket-alt"></i>
+            <span>优惠券管理</span>
+            <span class="badge">12</span>
+        </a>
+        <a class="menu-item" href="#">
+            <i class="fas fa-phone-alt"></i>
+            <span>号码管理</span>
+        </a>
+        <a class="menu-item active" href="#">
+            <i class="fas fa-gem"></i>
+            <span>权益管理</span>
+        </a>
+        <a class="menu-item" href="#">
+            <i class="fas fa-box"></i>
+            <span>快递管理</span>
+        </a>
+
+        <div style="margin-top: auto; padding: 20px 20px 0 20px; border-top: 1px solid #f0f2f5; margin-top: 20px;">
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #86909c;">
+                <i class="fas fa-cog" style="font-size: 14px;"></i>
+                <span style="font-size: 12px;">系统设置</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ===== 主区域 ===== -->
+    <div class="main">
+
+        <!-- ===== 顶部导航 ===== -->
+        <header class="topbar">
+            <div class="left">
+                <div class="page-title">
+                    <i class="fas fa-gem"></i>
+                    <span>权益管理</span>
+                </div>
+
+                <!-- ===== ★ 新增面包屑 ===== -->
+                <nav class="breadcrumb" aria-label="面包屑导航">
+                    <a href="#"><i class="fas fa-home"></i> 首页</a>
+                    <span class="separator"><i class="fas fa-chevron-right" style="font-size: 10px;"></i></span>
+                    <a href="#">权益管理</a>
+                    <span class="separator"><i class="fas fa-chevron-right" style="font-size: 10px;"></i></span>
+                    <span class="current">
+                        <i class="fas fa-gem"></i> 权益列表
+                    </span>
+                </nav>
+            </div>
+
+            <div class="right">
+                <button class="icon-btn" title="通知">
+                    <i class="far fa-bell"></i>
+                </button>
+                <div class="admin-info">
+                    <div class="avatar">管</div>
+                    <span class="name">管理员</span>
+                    <span class="role">超级管理</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== 内容主体 ===== -->
+        <div class="content">
+
+            <!-- ===== 工具栏 ===== -->
+            <div class="toolbar">
+                <div class="left-actions">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="搜索权益名称" />
+                    </div>
+                    <button class="btn"><i class="fas fa-search"></i> 搜索</button>
+                    <button class="btn btn-primary"><i class="fas fa-plus"></i> 新增权益</button>
+                    <button class="btn"><i class="fas fa-download"></i> 数据导入</button>
+                </div>
+                <div class="right-actions">
+                    <span><i class="far fa-calendar-alt"></i> 2026-06-30</span>
+                    <span class="divider"></span>
+                    <span><i class="far fa-clock"></i> 14:28</span>
+                </div>
+            </div>
+
+            <!-- ===== 表格卡片 ===== -->
+            <div class="table-card">
+
+                <div class="table-header">
+                    <div class="title">
+                        <i class="fas fa-list" style="color: #1677ff;"></i> 权益列表
+                        <span class="count">(共 0 项)</span>
+                    </div>
+                    <div class="actions">
+                        <button class="btn-sm"><i class="fas fa-sync-alt"></i> 刷新</button>
+                        <button class="btn-sm"><i class="fas fa-columns"></i> 列设置</button>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">
+                                    <input type="checkbox" style="accent-color: #1677ff; width: 15px; height: 15px; cursor: default;" />
+                                </th>
+                                <th>权益名称</th>
+                                <th style="width: 80px;">需要抢</th>
+                                <th style="width: 100px;">成本</th>
+                                <th style="width: 140px;">收益描述</th>
+                                <th style="width: 120px;">关联优惠</th>
+                                <th style="width: 100px;">状态</th>
+                                <th style="width: 120px;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 空状态 -->
+                            <tr>
+                                <td colspan="8">
+                                    <div class="empty-state">
+                                        <i class="fas fa-inbox"></i>
+                                        <div class="empty-title">暂无权益数据</div>
+                                        <div class="empty-desc">点击「新增权益」添加第一条记录</div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- 如果希望展示示例数据，可取消注释下方代码并注释掉上面的空状态 -->
+                            <!--
+                            <tr>
+                                <td><input type="checkbox" style="accent-color: #1677ff; width: 15px; height: 15px; cursor: default;" /></td>
+                                <td><strong>周末观影券</strong></td>
+                                <td><span class="tag tag-warning">是</span></td>
+                                <td>¥ 5.00</td>
+                                <td>满30减5</td>
+                                <td><span class="tag tag-blue">影音券</span></td>
+                                <td><span class="status-dot green"></span> 生效中</td>
+                                <td>
+                                    <div class="action-btns">
+                                        <button class="action-btn edit"><i class="fas fa-edit"></i></button>
+                                        <button class="action-btn delete"><i class="fas fa-trash-alt"></i></button>
+                                        <button class="action-btn"><i class="fas fa-ellipsis-v"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><input type="checkbox" style="accent-color: #1677ff; width: 15px; height: 15px; cursor: default;" /></td>
+                                <td><strong>便利店满减券</strong></td>
+                                <td><span class="tag tag-success">否</span></td>
+                                <td>¥ 2.50</td>
+                                <td>满10减2</td>
+                                <td><span class="tag tag-blue">便利店</span></td>
+                                <td><span class="status-dot orange"></span> 即将失效</td>
+                                <td>
+                                    <div class="action-btns">
+                                        <button class="action-btn edit"><i class="fas fa-edit"></i></button>
+                                        <button class="action-btn delete"><i class="fas fa-trash-alt"></i></button>
+                                        <button class="action-btn"><i class="fas fa-ellipsis-v"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- ===== 表格底部 ===== -->
+                <div class="table-footer">
+                    <span>共 0 条，每页 10 条</span>
+                    <div class="pagination">
+                        <button class="page-btn arrow"><i class="fas fa-chevron-left"></i></button>
+                        <button class="page-btn active">1</button>
+                        <button class="page-btn arrow"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== 底部版权信息（可选） ===== -->
+            <div style="margin-top: 24px; text-align: center; font-size: 12px; color: #c9cdd4; border-top: 1px solid #e8ecf1; padding-top: 16px;">
+                © 2026 翼支付权益管理 · 版本 v2.4.1
+            </div>
+
+        </div>
+        <!-- /content -->
+    </div>
+    <!-- /main -->
+
+</body>
+</html>
