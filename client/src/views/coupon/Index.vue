@@ -64,6 +64,11 @@
         <a-form-item label="优惠券名称" required>
           <a-input v-model:value="formState.name" placeholder="请输入优惠券名称" />
         </a-form-item>
+        <a-form-item label="所属权益">
+          <a-select v-model:value="formState.benefitId" placeholder="请选择关联权益" allow-clear>
+            <a-select-option v-for="b in allBenefits" :key="b.id" :value="b.id">{{ b.name }}</a-select-option>
+          </a-select>
+        </a-form-item>
         <a-row :gutter="16">
           <a-col :span="8">
             <a-form-item label="是否需要抢">
@@ -163,7 +168,7 @@ const columns = [
 const modalVisible = ref(false);
 const editingRecord = ref<any>(null);
 const formState = reactive({
-  name: '', needGrab: 0, forPhysical: 0,
+  name: '', benefitId: null as number | null, needGrab: 0, forPhysical: 0,
   validDays: null as number | null,
   validStart: null as string | null,
   validEnd: null as string | null,
@@ -212,7 +217,8 @@ const openModal = (record?: any) => {
   if (record) {
     validityType.value = record.validDays ? 'days' : 'range';
     Object.assign(formState, {
-      name: record.name, needGrab: record.needGrab, forPhysical: record.forPhysical ?? 0,
+      name: record.name, benefitId: record.benefitId ?? null,
+      needGrab: record.needGrab, forPhysical: record.forPhysical ?? 0,
       validDays: record.validDays,
       validStart: record.validStart ? dayjs(record.validStart).format('YYYY-MM-DD') : null,
       validEnd: record.validEnd ? dayjs(record.validEnd).format('YYYY-MM-DD') : null,
@@ -221,7 +227,7 @@ const openModal = (record?: any) => {
   } else {
     validityType.value = 'days';
     Object.assign(formState, {
-      name: '', needGrab: 0, forPhysical: 0, validDays: null, validStart: null,
+      name: '', benefitId: null, needGrab: 0, forPhysical: 0, validDays: null, validStart: null,
       validEnd: null, sortOrder: 0, status: 1,
     });
   }
@@ -233,7 +239,8 @@ const handleSubmit = async () => {
   submitting.value = true;
   try {
     const data: any = {
-      name: formState.name, needGrab: formState.needGrab, forPhysical: formState.forPhysical,
+      name: formState.name, benefitId: formState.benefitId,
+      needGrab: formState.needGrab, forPhysical: formState.forPhysical,
       sortOrder: formState.sortOrder, status: formState.status,
       validDays: validityType.value === 'days' ? formState.validDays : null,
       validStart: validityType.value === 'range' ? formState.validStart : null,

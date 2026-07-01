@@ -111,8 +111,8 @@ const totalCost = computed(() => {
   return phoneDetail.value?.benefits?.reduce((sum: number, pb: any) => sum + (pb.benefit?.cost ? Number(pb.benefit.cost) : 0), 0) || 0;
 });
 
-const getGrabStatus = (_benefitId: number) => {
-  const record = phoneDetail.value?.grabRecords?.find((r: any) => r.month === currentMonth);
+const getGrabStatus = (benefitId: number) => {
+  const record = phoneDetail.value?.grabRecords?.find((r: any) => r.benefitId === benefitId && r.month === currentMonth);
   if (record && record.status === '已领取') return '已领取';
   return '未领取';
 };

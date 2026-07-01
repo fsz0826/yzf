@@ -8,11 +8,17 @@ export const getPhoneDetail = (id: number) => {
   return api.get(`/phone/${id}`);
 };
 
-export const createPhone = (data: { phoneNumber: string; status?: number; benefitIds?: number[] }) => {
+interface BenefitConfig {
+  benefitId: number;
+  grabDayStart?: number;
+  grabDayEnd?: number;
+}
+
+export const createPhone = (data: { phoneNumber: string; status?: number; benefitConfigs?: BenefitConfig[] }) => {
   return api.post('/phone', data);
 };
 
-export const updatePhone = (id: number, data: { phoneNumber: string; status: number; benefitIds?: number[] }) => {
+export const updatePhone = (id: number, data: { phoneNumber: string; status: number; benefitConfigs?: BenefitConfig[] }) => {
   return api.put(`/phone/${id}`, data);
 };
 

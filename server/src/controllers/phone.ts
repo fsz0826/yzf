@@ -34,7 +34,6 @@ export const getPhones = async (req: Request, res: Response) => {
       const grabbedCount = phone.grabRecords.filter((r) => r.month === currentMonth && r.status === '已领取').length;
       const notGrabbedCount = totalBenefits - grabbedCount;
       const monthlyCost = phone.benefits.reduce((sum, pb) => sum + (pb.benefit?.cost ? Number(pb.benefit.cost) : 0), 0);
-      const monthlyBenefit = phone.benefits.reduce((sum, pb) => sum + (pb.benefit?.benefitValue ? Number(pb.benefit.benefitValue) : 0), 0);
       const lastGrab = phone.grabRecords.sort((a, b) => new Date(b.grabbedAt || 0).getTime() - new Date(a.grabbedAt || 0).getTime())[0];
       const latestExpress = phone.express[0];
 
@@ -47,7 +46,6 @@ export const getPhones = async (req: Request, res: Response) => {
         grabbedCount,
         notGrabbedCount,
         monthlyCost,
-        monthlyBenefit,
         lastGrabTime: lastGrab?.grabbedAt || null,
         expressStatus: latestExpress?.status || '无',
         benefits: phone.benefits,
@@ -74,7 +72,7 @@ export const getPhoneDetail = async (req: Request, res: Response) => {
         },
         grabRecords: {
           orderBy: { month: 'desc' },
-          select: { month: true, status: true, grabbedAt: true },
+          select: { benefitId: true, month: true, status: true, grabbedAt: true },
         },
       },
     });
@@ -88,15 +86,21 @@ export const getPhoneDetail = async (req: Request, res: Response) => {
   }
 };
 
-const syncPhoneBenefits = async (phoneId: number, benefitIds: number[]) => {
+interface BenefitConfig {
+  benefitId: number;
+  grabDayStart?: number;
+  grabDayEnd?: number;
+}
+
+const syncPhoneBenefits = async (phoneId: number, benefitConfigs: BenefitConfig[]) => {
   await prisma.phoneBenefit.deleteMany({ where: { phoneId } });
-  if (benefitIds.length > 0) {
+  if (benefitConfigs.length > 0) {
     await prisma.phoneBenefit.createMany({
-      data: benefitIds.map((benefitId) => ({
+      data: benefitConfigs.map((config) => ({
         phoneId,
-        benefitId,
-        grabDayStart: 1,
-        grabDayEnd: 28,
+        benefitId: config.benefitId,
+        grabDayStart: config.grabDayStart ?? 1,
+        grabDayEnd: config.grabDayEnd ?? 28,
       })),
     });
   }
@@ -104,7 +108,7 @@ const syncPhoneBenefits = async (phoneId: number, benefitIds: number[]) => {
 
 export const createPhone = async (req: Request, res: Response) => {
   try {
-    const { phoneNumber, status, benefitIds } = req.body;
+    const { phoneNumber, status, benefitConfigs } = req.body;
     if (!phoneNumber) {
       return res.json({ code: 400, message: '手机号不能为空' });
     }
@@ -118,8 +122,8 @@ export const createPhone = async (req: Request, res: Response) => {
         status: status ?? 1,
       },
     });
-    if (benefitIds && benefitIds.length > 0) {
-      await syncPhoneBenefits(phone.id, benefitIds);
+    if (benefitConfigs && benefitConfigs.length > 0) {
+      await syncPhoneBenefits(phone.id, benefitConfigs);
     }
     res.json({ code: 200, message: '创建成功', data: phone });
   } catch (error) {
@@ -131,7 +135,7 @@ export const createPhone = async (req: Request, res: Response) => {
 export const updatePhone = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
-    const { phoneNumber, status, benefitIds } = req.body;
+    const { phoneNumber, status, benefitConfigs } = req.body;
     const existing = await prisma.phone.findUnique({ where: { id } });
     if (!existing) {
       return res.json({ code: 404, message: '号码不存在' });
@@ -146,8 +150,8 @@ export const updatePhone = async (req: Request, res: Response) => {
       where: { id },
       data: { phoneNumber, status },
     });
-    if (benefitIds !== undefined) {
-      await syncPhoneBenefits(id, benefitIds || []);
+    if (benefitConfigs !== undefined) {
+      await syncPhoneBenefits(id, benefitConfigs || []);
     }
     res.json({ code: 200, message: '更新成功' });
   } catch (error) {
