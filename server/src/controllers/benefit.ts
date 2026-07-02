@@ -118,13 +118,18 @@ export const deleteBenefit = async (req: Request, res: Response) => {
     if (!existing) {
       return res.json({ code: 404, message: '权益不存在' });
     }
+    // 先解除所有关联
     await prisma.coupon.updateMany({
       where: { benefitId: id },
       data: { benefitId: null },
     });
+    await prisma.phoneBenefit.deleteMany({
+      where: { benefitId: id },
+    });
     await prisma.benefit.delete({ where: { id } });
     res.json({ code: 200, message: '删除成功' });
-  } catch {
+  } catch (error) {
+    console.error('删除权益失败:', error);
     res.json({ code: 500, message: '服务器错误' });
   }
 };

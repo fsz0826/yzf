@@ -84,7 +84,7 @@
                 <template v-if="cCol.key === 'forPhysical'">
                   <a-tag :color="coupon.forPhysical ? 'orange' : 'default'">{{ coupon.forPhysical ? '实物' : '非实物' }}</a-tag>
                 </template>
-                <template v-if="cCol.key === 'validity'">{{ formatValidity(coupon) }}</template>
+                <template v-if="cCol.key === 'validity'">{{ coupon.usableAfterDays > 0 ? `领取后第${coupon.usableAfterDays}天可用` : '立即可用' }}，{{ getDaysUntilMonthEnd() }}天后过期</template>
                 <template v-if="cCol.key === 'status'">
                   <a-badge :status="coupon.status === 1 ? 'success' : 'error'" :text="coupon.status === 1 ? '启用' : '停用'" />
                 </template>
@@ -205,10 +205,10 @@ const benefitForm = reactive({
   recommendation: '', calculationMethod: '', sortOrder: 0, status: 1, couponIds: [] as number[],
 });
 
-const formatValidity = (coupon: any) => {
-  if (coupon.validDays) return `领取后${coupon.validDays}天内有效`;
-  if (coupon.validStart && coupon.validEnd) return `${dayjs(coupon.validStart).format('YYYY-MM-DD')} ~ ${dayjs(coupon.validEnd).format('YYYY-MM-DD')}`;
-  return '-';
+const getDaysUntilMonthEnd = () => {
+  const now = dayjs();
+  const lastDay = now.endOf('month');
+  return lastDay.diff(now, 'day');
 };
 
 const isRowExpanded = (id: number) => {

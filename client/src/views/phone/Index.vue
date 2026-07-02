@@ -74,8 +74,8 @@
             </a-space>
 
             <template #actions>
-              <span @click.stop="openModal(phone)"><edit-outlined /> 编辑</span>
-              <span @click.stop="handleDelete(phone.id)" style="color: #ff4d4f"><delete-outlined /> 删除</span>
+              <div @click.stop="openModal(phone)" style="cursor: pointer; padding: 0 12px"><edit-outlined /> 编辑</div>
+              <div @click.stop="handleDelete(phone.id)" style="cursor: pointer; padding: 0 12px; color: #ff4d4f"><delete-outlined /> 删除</div>
             </template>
           </a-card>
         </a-col>
@@ -106,19 +106,14 @@
           </a-select>
         </a-form-item>
         <a-form-item label="关联权益">
-          <div style="border: 1px solid #e8e8e8; border-radius: 6px; padding: 12px; max-height: 300px; overflow-y: auto">
-            <div v-for="benefit in allBenefits" :key="benefit.id" style="display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid #f0f0f0">
-              <a-checkbox :checked="isBenefitChecked(benefit.id)" @change="(e: any) => toggleBenefit(benefit.id, e.target.checked)">
+          <a-checkbox-group :value="checkedBenefitIds" @change="onBenefitIdsChange">
+            <div style="display: flex; flex-wrap: wrap; gap: 12px">
+              <a-checkbox v-for="benefit in allBenefits" :key="benefit.id" :value="benefit.id">
                 {{ benefit.name }}
               </a-checkbox>
-              <template v-if="isBenefitChecked(benefit.id)">
-                <a-input-number v-model:value="getBenefitConfig(benefit.id).grabDayStart" :min="1" :max="28" size="small" style="width: 70px" placeholder="开始日" />
-                <span style="color: #86909c">-</span>
-                <a-input-number v-model:value="getBenefitConfig(benefit.id).grabDayEnd" :min="1" :max="28" size="small" style="width: 70px" placeholder="结束日" />
-                <span style="color: #86909c; font-size: 12px">日</span>
-              </template>
             </div>
-          </div>
+          </a-checkbox-group>
+          <div style="color: #86909c; font-size: 12px; margin-top: 4px">默认每月1号至月底可领取</div>
         </a-form-item>
       </a-form>
     </a-modal>
@@ -150,16 +145,11 @@ const currentTime = computed(() => dayjs().format('HH:mm'));
 
 const modalVisible = ref(false);
 const editingRecord = ref<any>(null);
-const formState = reactive({ phoneNumber: '', status: 1, benefitConfigs: [] as { benefitId: number; grabDayStart: number; grabDayEnd: number }[] });
+const formState = reactive({ phoneNumber: '', status: 1, benefitIds: [] as number[] });
 
-const isBenefitChecked = (benefitId: number) => formState.benefitConfigs.some(c => c.benefitId === benefitId);
-const getBenefitConfig = (benefitId: number) => formState.benefitConfigs.find(c => c.benefitId === benefitId)!;
-const toggleBenefit = (benefitId: number, checked: boolean) => {
-  if (checked) {
-    formState.benefitConfigs.push({ benefitId, grabDayStart: 1, grabDayEnd: 28 });
-  } else {
-    formState.benefitConfigs = formState.benefitConfigs.filter(c => c.benefitId !== benefitId);
-  }
+const checkedBenefitIds = computed(() => formState.benefitIds);
+const onBenefitIdsChange = (ids: number[]) => {
+  formState.benefitIds = ids;
 };
 
 const fetchPhones = async () => {
@@ -184,14 +174,10 @@ const openModal = (record?: any) => {
     Object.assign(formState, {
       phoneNumber: record.phoneNumber,
       status: record.status,
-      benefitConfigs: (record.benefits || []).map((b: any) => ({
-        benefitId: b.benefitId,
-        grabDayStart: b.grabDayStart,
-        grabDayEnd: b.grabDayEnd,
-      })),
+      benefitIds: (record.benefits || []).map((b: any) => b.benefitId),
     });
   } else {
-    Object.assign(formState, { phoneNumber: '', status: 1, benefitConfigs: [] });
+    Object.assign(formState, { phoneNumber: '', status: 1, benefitIds: [] });
   }
   modalVisible.value = true;
 };
@@ -200,14 +186,9 @@ const handleSubmit = async () => {
   if (!formState.phoneNumber) { message.warning('请输入手机号'); return; }
   submitting.value = true;
   try {
-    const data = {
-      phoneNumber: formState.phoneNumber,
-      status: formState.status,
-      benefitConfigs: formState.benefitConfigs,
-    };
     const res: any = editingRecord.value
-      ? await updatePhone(editingRecord.value.id, data)
-      : await createPhone(data);
+      ? await updatePhone(editingRecord.value.id, { ...formState })
+      : await createPhone({ ...formState });
     if (res.code === 200) { message.success(res.message); modalVisible.value = false; fetchPhones(); }
     else message.error(res.message);
   } catch { message.error('操作失败'); } finally { submitting.value = false; }

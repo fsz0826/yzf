@@ -86,17 +86,15 @@ model GrabRecord {
 }
 
 model Coupon {
-  id           Int       @id @default(autoincrement())
-  benefitId    Int?      @map("benefit_id")
-  name         String    @db.VarChar(100)
-  needGrab     Int       @default(0) @map("need_grab")
-  forPhysical  Int       @default(0) @map("for_physical")
-  validDays    Int?      @map("valid_days")
-  validStart   DateTime? @map("valid_start") @db.Date
-  validEnd     DateTime? @map("valid_end") @db.Date
-  sortOrder    Int       @default(0) @map("sort_order")
-  status       Int       @default(1)
-  createdAt    DateTime  @default(now()) @map("created_at")
+  id              Int       @id @default(autoincrement())
+  benefitId       Int?      @map("benefit_id")
+  name            String    @db.VarChar(100)
+  needGrab        Int       @default(0) @map("need_grab")
+  forPhysical     Int       @default(0) @map("for_physical")
+  usableAfterDays Int       @default(0) @map("usable_after_days")
+  sortOrder       Int       @default(0) @map("sort_order")
+  status          Int       @default(1)
+  createdAt       DateTime  @default(now()) @map("created_at")
 
   benefit Benefit?     @relation(fields: [benefitId], references: [id])
   records CouponRecord[]

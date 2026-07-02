@@ -1,6 +1,7 @@
 packages:
-  - "server"
-  - "client"
+  - server
+  - client
+
 allowBuilds:
   '@prisma/client': set this to true or false
   '@prisma/engines': set this to true or false
@@ -8,3 +9,11 @@ allowBuilds:
   esbuild: set this to true or false
   prisma: set this to true or false
   vue-demi: set this to true or false
+
+onlyBuiltDependencies:
+  - '@prisma/client'
+  - '@prisma/engines'
+  - core-js
+  - esbuild
+  - prisma
+  - vue-demi

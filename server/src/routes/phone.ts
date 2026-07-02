@@ -6,6 +6,8 @@ import {
   createPhone,
   updatePhone,
   deletePhone,
+  grabBenefit,
+  ungrabBenefit,
 } from '../controllers/phone';
 
 const router = Router();
@@ -17,5 +19,7 @@ router.get('/:id', getPhoneDetail);
 router.post('/', createPhone);
 router.put('/:id', updatePhone);
 router.delete('/:id', deletePhone);
+router.post('/:id/grab', grabBenefit);
+router.post('/:id/ungrab', ungrabBenefit);
 
 export default router;

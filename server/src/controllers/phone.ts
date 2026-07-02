@@ -86,21 +86,17 @@ export const getPhoneDetail = async (req: Request, res: Response) => {
   }
 };
 
-interface BenefitConfig {
-  benefitId: number;
-  grabDayStart?: number;
-  grabDayEnd?: number;
-}
-
-const syncPhoneBenefits = async (phoneId: number, benefitConfigs: BenefitConfig[]) => {
+const syncPhoneBenefits = async (phoneId: number, benefitIds: number[]) => {
   await prisma.phoneBenefit.deleteMany({ where: { phoneId } });
-  if (benefitConfigs.length > 0) {
+  if (benefitIds.length > 0) {
+    const now = new Date();
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     await prisma.phoneBenefit.createMany({
-      data: benefitConfigs.map((config) => ({
+      data: benefitIds.map((benefitId) => ({
         phoneId,
-        benefitId: config.benefitId,
-        grabDayStart: config.grabDayStart ?? 1,
-        grabDayEnd: config.grabDayEnd ?? 28,
+        benefitId,
+        grabDayStart: 1,
+        grabDayEnd: lastDay,
       })),
     });
   }
@@ -108,7 +104,7 @@ const syncPhoneBenefits = async (phoneId: number, benefitConfigs: BenefitConfig[
 
 export const createPhone = async (req: Request, res: Response) => {
   try {
-    const { phoneNumber, status, benefitConfigs } = req.body;
+    const { phoneNumber, status, benefitIds } = req.body;
     if (!phoneNumber) {
       return res.json({ code: 400, message: '手机号不能为空' });
     }
@@ -122,8 +118,8 @@ export const createPhone = async (req: Request, res: Response) => {
         status: status ?? 1,
       },
     });
-    if (benefitConfigs && benefitConfigs.length > 0) {
-      await syncPhoneBenefits(phone.id, benefitConfigs);
+    if (benefitIds && benefitIds.length > 0) {
+      await syncPhoneBenefits(phone.id, benefitIds);
     }
     res.json({ code: 200, message: '创建成功', data: phone });
   } catch (error) {
@@ -135,7 +131,7 @@ export const createPhone = async (req: Request, res: Response) => {
 export const updatePhone = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
-    const { phoneNumber, status, benefitConfigs } = req.body;
+    const { phoneNumber, status, benefitIds } = req.body;
     const existing = await prisma.phone.findUnique({ where: { id } });
     if (!existing) {
       return res.json({ code: 404, message: '号码不存在' });
@@ -150,8 +146,8 @@ export const updatePhone = async (req: Request, res: Response) => {
       where: { id },
       data: { phoneNumber, status },
     });
-    if (benefitConfigs !== undefined) {
-      await syncPhoneBenefits(id, benefitConfigs || []);
+    if (benefitIds !== undefined) {
+      await syncPhoneBenefits(id, benefitIds || []);
     }
     res.json({ code: 200, message: '更新成功' });
   } catch (error) {
@@ -175,6 +171,58 @@ export const deletePhone = async (req: Request, res: Response) => {
     res.json({ code: 200, message: '删除成功' });
   } catch (error) {
     console.error('删除号码失败:', error);
+    res.json({ code: 500, message: '服务器错误' });
+  }
+};
+
+export const ungrabBenefit = async (req: Request, res: Response) => {
+  try {
+    const phoneId = Number(req.params.id);
+    const { benefitId } = req.body;
+    if (!benefitId) {
+      return res.json({ code: 400, message: '缺少权益ID' });
+    }
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const existing = await prisma.grabRecord.findUnique({
+      where: { phoneId_benefitId_month: { phoneId, benefitId, month } },
+    });
+    if (!existing || existing.status === '未领取') {
+      return res.json({ code: 400, message: '该权益未领取，无法取消' });
+    }
+    await prisma.grabRecord.delete({
+      where: { phoneId_benefitId_month: { phoneId, benefitId, month } },
+    });
+    res.json({ code: 200, message: '已取消领取' });
+  } catch (error) {
+    console.error('取消领取失败:', error);
+    res.json({ code: 500, message: '服务器错误' });
+  }
+};
+
+export const grabBenefit = async (req: Request, res: Response) => {
+  try {
+    const phoneId = Number(req.params.id);
+    const { benefitId } = req.body;
+    if (!benefitId) {
+      return res.json({ code: 400, message: '缺少权益ID' });
+    }
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const existing = await prisma.grabRecord.findUnique({
+      where: { phoneId_benefitId_month: { phoneId, benefitId, month } },
+    });
+    if (existing && existing.status === '已领取') {
+      return res.json({ code: 400, message: '该权益本月已领取' });
+    }
+    await prisma.grabRecord.upsert({
+      where: { phoneId_benefitId_month: { phoneId, benefitId, month } },
+      update: { status: '已领取', grabbedAt: now },
+      create: { phoneId, benefitId, status: '已领取', grabbedAt: now, month },
+    });
+    res.json({ code: 200, message: '领取成功' });
+  } catch (error) {
+    console.error('领取失败:', error);
     res.json({ code: 500, message: '服务器错误' });
   }
 };

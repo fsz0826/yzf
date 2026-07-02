@@ -43,7 +43,9 @@
           <template v-if="column.key === 'forPhysical'">
             <a-tag :color="record.forPhysical ? 'orange' : 'default'">{{ record.forPhysical ? '实物' : '非实物' }}</a-tag>
           </template>
-          <template v-if="column.key === 'validity'">{{ formatValidity(record) }}</template>
+          <template v-if="column.key === 'validity'">
+            {{ record.usableAfterDays > 0 ? `领取后第${record.usableAfterDays}天可用` : '立即可用' }}，{{ getDaysUntilMonthEnd() }}天后过期
+          </template>
           <template v-if="column.key === 'status'">
             <a-badge :status="record.status === 1 ? 'success' : 'error'" :text="record.status === 1 ? '启用' : '停用'" />
           </template>
@@ -92,27 +94,10 @@
             </a-form-item>
           </a-col>
         </a-row>
-        <a-form-item label="有效期类型">
-          <a-radio-group v-model:value="validityType">
-            <a-radio value="days">按天数</a-radio>
-            <a-radio value="range">固定日期</a-radio>
-          </a-radio-group>
+        <a-form-item label="使用延迟（天）">
+          <a-input-number v-model:value="formState.usableAfterDays" :min="0" style="width: 100%" placeholder="领取后第N天可用，0表示立即可用" />
+          <div style="color: #86909c; font-size: 12px; margin-top: 4px">优惠券月底过期，领取后需等待此天数才可使用</div>
         </a-form-item>
-        <a-form-item v-if="validityType === 'days'" label="有效天数">
-          <a-input-number v-model:value="formState.validDays" :min="1" style="width: 100%" placeholder="领取后N天内有效" />
-        </a-form-item>
-        <a-row v-if="validityType === 'range'" :gutter="16">
-          <a-col :span="12">
-            <a-form-item label="有效期开始">
-              <a-date-picker v-model:value="formState.validStart" style="width: 100%" value-format="YYYY-MM-DD" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-item label="有效期结束">
-              <a-date-picker v-model:value="formState.validEnd" style="width: 100%" value-format="YYYY-MM-DD" />
-            </a-form-item>
-          </a-col>
-        </a-row>
         <a-form-item label="状态">
           <a-select v-model:value="formState.status">
             <a-select-option :value="1">启用</a-select-option>
@@ -169,19 +154,14 @@ const modalVisible = ref(false);
 const editingRecord = ref<any>(null);
 const formState = reactive({
   name: '', benefitId: null as number | null, needGrab: 0, forPhysical: 0,
-  validDays: null as number | null,
-  validStart: null as string | null,
-  validEnd: null as string | null,
+  usableAfterDays: 0,
   sortOrder: 0, status: 1,
 });
-const validityType = ref<'days' | 'range'>('days');
 
-const formatValidity = (coupon: any) => {
-  if (coupon.validDays) return `领取后${coupon.validDays}天内有效`;
-  if (coupon.validStart && coupon.validEnd) {
-    return `${dayjs(coupon.validStart).format('YYYY-MM-DD')} ~ ${dayjs(coupon.validEnd).format('YYYY-MM-DD')}`;
-  }
-  return '-';
+const getDaysUntilMonthEnd = () => {
+  const now = dayjs();
+  const lastDay = now.endOf('month');
+  return lastDay.diff(now, 'day');
 };
 
 const fetchBenefits = async () => {
@@ -215,20 +195,16 @@ const handleTableChange = (pag: any) => { pagination.current = pag.current; pagi
 const openModal = (record?: any) => {
   editingRecord.value = record || null;
   if (record) {
-    validityType.value = record.validDays ? 'days' : 'range';
     Object.assign(formState, {
       name: record.name, benefitId: record.benefitId ?? null,
       needGrab: record.needGrab, forPhysical: record.forPhysical ?? 0,
-      validDays: record.validDays,
-      validStart: record.validStart ? dayjs(record.validStart).format('YYYY-MM-DD') : null,
-      validEnd: record.validEnd ? dayjs(record.validEnd).format('YYYY-MM-DD') : null,
+      usableAfterDays: record.usableAfterDays ?? 0,
       sortOrder: record.sortOrder, status: record.status,
     });
   } else {
-    validityType.value = 'days';
     Object.assign(formState, {
-      name: '', benefitId: null, needGrab: 0, forPhysical: 0, validDays: null, validStart: null,
-      validEnd: null, sortOrder: 0, status: 1,
+      name: '', benefitId: null, needGrab: 0, forPhysical: 0, usableAfterDays: 0,
+      sortOrder: 0, status: 1,
     });
   }
   modalVisible.value = true;
@@ -241,10 +217,8 @@ const handleSubmit = async () => {
     const data: any = {
       name: formState.name, benefitId: formState.benefitId,
       needGrab: formState.needGrab, forPhysical: formState.forPhysical,
+      usableAfterDays: formState.usableAfterDays,
       sortOrder: formState.sortOrder, status: formState.status,
-      validDays: validityType.value === 'days' ? formState.validDays : null,
-      validStart: validityType.value === 'range' ? formState.validStart : null,
-      validEnd: validityType.value === 'range' ? formState.validEnd : null,
     };
     const res: any = editingRecord.value
       ? await updateCoupon(editingRecord.value.id, data)

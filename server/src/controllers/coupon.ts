@@ -31,7 +31,7 @@ export const getAllCoupons = async (req: Request, res: Response) => {
 
 export const createCoupon = async (req: Request, res: Response) => {
   try {
-    const { benefitId, name, needGrab, forPhysical, validDays, validStart, validEnd, sortOrder, status } = req.body;
+    const { benefitId, name, needGrab, forPhysical, usableAfterDays, sortOrder, status } = req.body;
     if (!name) {
       return res.json({ code: 400, message: '优惠券名称不能为空' });
     }
@@ -41,9 +41,7 @@ export const createCoupon = async (req: Request, res: Response) => {
         name,
         needGrab: needGrab ?? 0,
         forPhysical: forPhysical ?? 0,
-        validDays: validDays ?? null,
-        validStart: validStart ? new Date(validStart) : null,
-        validEnd: validEnd ? new Date(validEnd) : null,
+        usableAfterDays: usableAfterDays ?? 0,
         sortOrder: sortOrder ?? 0,
         status: status ?? 1,
       },
@@ -58,7 +56,7 @@ export const createCoupon = async (req: Request, res: Response) => {
 export const updateCoupon = async (req: Request, res: Response) => {
   try {
     const id = Number(req.params.id);
-    const { benefitId, name, needGrab, forPhysical, validDays, validStart, validEnd, sortOrder, status } = req.body;
+    const { benefitId, name, needGrab, forPhysical, usableAfterDays, sortOrder, status } = req.body;
     const existing = await prisma.coupon.findUnique({ where: { id } });
     if (!existing) {
       return res.json({ code: 404, message: '优惠券不存在' });
@@ -70,9 +68,7 @@ export const updateCoupon = async (req: Request, res: Response) => {
         name,
         needGrab,
         forPhysical: forPhysical ?? 0,
-        validDays: validDays ?? null,
-        validStart: validStart ? new Date(validStart) : null,
-        validEnd: validEnd ? new Date(validEnd) : null,
+        usableAfterDays: usableAfterDays ?? 0,
         sortOrder,
         status,
       },
